@@ -1,0 +1,275 @@
+/**********************************************************************/
+/* Program Name: INVDRIVER                                            */
+/* Description:  Central driver program for Invoice EDI processing   */
+/*               - Validates invoice type before processing          */
+/*               - Inserts requests into EDIINVOIC810 tracking table */
+/*               - Routes to appropriate program (INVOICE/EDI810)    */
+/*               - Cleans up tracking record if processing fails     */
+/*                                                                    */
+/* Parameters:                                                        */
+/*   &PSIN   - Packing Slip Number (6,0)                            */
+/*   &CUSTIN - Customer Number (6,0)                                */
+/*   &INVIN  - Invoice Number (7,0)                                  */
+/*   &INVTY  - Invoice Type: '00'=X12 810, '9 '=EDIFACT INVOIC      */
+/*             IMPORTANT: Only these two values are valid.           */
+/*             Invalid types will cause immediate error exit.        */
+/*                                                                    */
+/* Called Programs:                                                   */
+/*   EDITEST/INVOICE - EDIFACT INVOIC generator (no parameters)      */
+/*   EDITEST/EDI810  - X12 810 generator (no parameters) [future]    */
+/*                                                                    */
+/* Database:                                                          */
+/*   EDITEST/EDIINVOIC810 - Tracking table for invoice requests      */
+/*                                                                    */
+/* Error Handling:                                                    */
+/*   - Input validation prevents non-numeric data from processing    */
+/*   - Invalid invoice types rejected before database insert         */
+/*   - All conversion operations protected with MONMSG               */
+/*   - Failed program calls trigger record deletion (rollback)       */
+/*   - SQL errors captured with detailed diagnostics                 */
+/*   - Global error handler catches any unexpected errors            */
+/*   - All errors send escape messages to caller (no program halts)  */
+/*                                                                    */
+/* Author:  AJ Gomez                                                  */
+/* Contact: 262-880-0135                                              */
+/* Date:    2026-02-16                                                */
+/**********************************************************************/
+
+             PGM        PARM(&PSIN &CUSTIN &INVIN &INVTY)
+
+             /* Parameter Declarations - Accept as CHAR to avoid conversion issues */
+             DCL        VAR(&PSIN) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&CUSTIN) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&INVIN) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&INVTY) TYPE(*CHAR) LEN(2)
+
+             /* Working Variables */
+             DCL        VAR(&SQLSTMT) TYPE(*CHAR) LEN(512)
+             DCL        VAR(&PSCHAR) TYPE(*CHAR) LEN(12)
+             DCL        VAR(&CUSTCHAR) TYPE(*CHAR) LEN(12)
+             DCL        VAR(&INVCHAR) TYPE(*CHAR) LEN(12)
+             DCL        VAR(&FMTTYPE) TYPE(*CHAR) LEN(3)
+             DCL        VAR(&PS) TYPE(*DEC) LEN(6 0)
+             DCL        VAR(&CUST) TYPE(*DEC) LEN(6 0)
+             DCL        VAR(&INV) TYPE(*DEC) LEN(7 0)
+
+             /* Error Handling Variables */
+             DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(512)
+             DCL        VAR(&FAILEDPGM) TYPE(*CHAR) LEN(10)
+
+             /* Input Validation Variables */
+             DCL        VAR(&VALID) TYPE(*LGL)
+             DCL        VAR(&I) TYPE(*DEC) LEN(3 0)
+             DCL        VAR(&CHAR) TYPE(*CHAR) LEN(1)
+
+             /* Global error handler - catches any unmonitored errors */
+             MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(UNHANDLED))
+
+             /* Setup Library List */
+             RMVLIBLE   LIB(EDITEST)
+             MONMSG     MSGID(CPF2104)
+
+             ADDLIBLE   LIB(EDITEST)
+             MONMSG     MSGID(CPF2103)
+
+             /* Validate PSIN contains only numeric characters */
+             CHGVAR     VAR(&VALID) VALUE('1')
+             CHGVAR     VAR(&I) VALUE(1)
+             DOWHILE    COND(&I *LE 6)
+                CHGVAR  VAR(&CHAR) VALUE(%SST(&PSIN &I 1))
+                IF      COND(&CHAR *LT '0' *OR &CHAR *GT '9') THEN(DO)
+                   IF   COND(&CHAR *NE ' ') THEN(DO)
+                      CHGVAR VAR(&VALID) VALUE('0')
+                      LEAVE
+                   ENDDO
+                ENDDO
+                CHGVAR  VAR(&I) VALUE(&I + 1)
+             ENDDO
+
+             IF         COND(&VALID *EQ '0') THEN(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Invalid PS number contains +
+                          non-numeric data: ' *CAT &PSIN) +
+                          MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             /* Validate CUSTIN contains only numeric characters */
+             CHGVAR     VAR(&VALID) VALUE('1')
+             CHGVAR     VAR(&I) VALUE(1)
+             DOWHILE    COND(&I *LE 6)
+                CHGVAR  VAR(&CHAR) VALUE(%SST(&CUSTIN &I 1))
+                IF      COND(&CHAR *LT '0' *OR &CHAR *GT '9') THEN(DO)
+                   IF   COND(&CHAR *NE ' ') THEN(DO)
+                      CHGVAR VAR(&VALID) VALUE('0')
+                      LEAVE
+                   ENDDO
+                ENDDO
+                CHGVAR  VAR(&I) VALUE(&I + 1)
+             ENDDO
+
+             IF         COND(&VALID *EQ '0') THEN(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Invalid CUST number contains +
+                          non-numeric data: ' *CAT &CUSTIN) +
+                          MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             /* Validate INVIN contains only numeric characters */
+             CHGVAR     VAR(&VALID) VALUE('1')
+             CHGVAR     VAR(&I) VALUE(1)
+             DOWHILE    COND(&I *LE 7)
+                CHGVAR  VAR(&CHAR) VALUE(%SST(&INVIN &I 1))
+                IF      COND(&CHAR *LT '0' *OR &CHAR *GT '9') THEN(DO)
+                   IF   COND(&CHAR *NE ' ') THEN(DO)
+                      CHGVAR VAR(&VALID) VALUE('0')
+                      LEAVE
+                   ENDDO
+                ENDDO
+                CHGVAR  VAR(&I) VALUE(&I + 1)
+             ENDDO
+
+             IF         COND(&VALID *EQ '0') THEN(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Invalid INV number contains +
+                          non-numeric data: ' *CAT &INVIN) +
+                          MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             /* Convert parameters with error handling */
+             CHGVAR     VAR(&PS) VALUE(%DEC(&PSIN 6 0))
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('PS conversion failed - invalid +
+                          format: ' *CAT &PSIN) MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             CHGVAR     VAR(&CUST) VALUE(%DEC(&CUSTIN 6 0))
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('CUST conversion failed - invalid +
+                          format: ' *CAT &CUSTIN) MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             CHGVAR     VAR(&INV) VALUE(%DEC(&INVIN 7 0))
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('INV conversion failed - invalid +
+                          format: ' *CAT &INVIN) MSGTYPE(*ESCAPE)
+                GOTO    CMDLBL(ERROR)
+             ENDDO
+
+             CHGVAR     VAR(&PSCHAR) VALUE(%TRIM(&PSIN))
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&CUSTCHAR) VALUE(%TRIM(&CUSTIN))
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&INVCHAR) VALUE(%TRIM(&INVIN))
+             MONMSG     MSGID(CPF0000)
+
+             /* Validate Invoice Type FIRST - before any database operations */
+             /* This prevents invalid records from being inserted */
+             IF         COND(&INVTY *EQ '9 ') THEN(DO)
+                CHGVAR  VAR(&FMTTYPE) VALUE('EDI')
+             ENDDO
+             ELSE       CMD(IF COND(&INVTY *EQ '00') THEN(DO))
+                CHGVAR  VAR(&FMTTYPE) VALUE('X12')
+             ENDDO
+             ELSE       CMD(DO)
+                /* Invalid invoice type - reject immediately before DB insert */
+                SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Invalid Invoice Type: ' *CAT &INVTY +
+                          *CAT '. Valid values: 00 (X12) or +
+                          9  (EDIFACT)') MSGTYPE(*ESCAPE)
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+
+             /* Build SQL INSERT statement */
+             CHGVAR     VAR(&SQLSTMT) VALUE('INSERT INTO +
+                          EDIINVOIC810 (PACKING_SLIP, +
+                          CUSTOMER_NUMBER, INVOICE_NUMBER, +
+                          X12EDIFACT) VALUES (' +
+                          *CAT &PSCHAR *TCAT ', ' *CAT &CUSTCHAR +
+                          *TCAT ', ' *CAT &INVCHAR +
+                          *TCAT ', ''' *CAT &FMTTYPE *TCAT ''')')
+
+             /* Insert record into tracking table */
+             RUNSQL     SQL(&SQLSTMT) COMMIT(*NONE)
+             MONMSG     MSGID(CPF0000 SQL0000 SQL7000) EXEC(GOTO +
+                          CMDLBL(SQLERR))
+
+             /* Route to appropriate EDI program - type already validated */
+             IF         COND(&INVTY *EQ '9 ') THEN(DO)
+                /* EDIFACT INVOIC processing */
+                CALL       PGM(EDITEST/INVOICE)
+                MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(CALLERR))
+             ENDDO
+             ELSE       CMD(DO)
+                /* X12 810 processing - must be '00' if we got here */
+                CALL       PGM(EDITEST/EDI810)
+                MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(CALLERR))
+             ENDDO
+
+
+             /* Normal completion */
+             GOTO       CMDLBL(ENDPGM)
+
+             /* Error handling - SQL insert failure */
+ SQLERR:     RCVMSG     MSGTYPE(*EXCP) MSGDTA(&MSGDTA) MSGID(&MSGID)
+
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('SQL INSERT failed - PS: ' *CAT +
+                          &PSCHAR *TCAT ' CUST: ' *CAT &CUSTCHAR +
+                          *TCAT ' INV: ' *CAT &INVCHAR +
+                          *TCAT ' Error: ' *CAT &MSGID) +
+                          MSGTYPE(*ESCAPE)
+             GOTO       CMDLBL(ERROR)
+
+             /* Error handling - Program call failure */
+ CALLERR:    /* Capture error details */
+             RCVMSG     MSGTYPE(*EXCP) MSGDTA(&MSGDTA) MSGID(&MSGID)
+
+             /* Determine which program failed */
+             IF         COND(&INVTY *EQ '9 ') THEN(DO)
+                CHGVAR  VAR(&FAILEDPGM) VALUE('INVOICE')
+             ENDDO
+             ELSE       CMD(DO)
+                CHGVAR  VAR(&FAILEDPGM) VALUE('EDI810')
+             ENDDO
+
+             /* Delete the tracking record since processing failed */
+             CHGVAR     VAR(&SQLSTMT) VALUE('DELETE FROM +
+                          EDIINVOIC810 WHERE PACKING_SLIP = ' +
+                          *CAT &PSCHAR *TCAT ' AND CUSTOMER_NUMBER = ' +
+                          *CAT &CUSTCHAR *TCAT +
+                          ' AND INVOICE_NUMBER = ' *CAT &INVCHAR)
+             RUNSQL     SQL(&SQLSTMT) COMMIT(*NONE)
+             MONMSG     MSGID(CPF0000 SQL0000 SQL7000)
+
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Program ' *CAT &FAILEDPGM *TCAT +
+                          ' failed: ' *CAT &MSGID *TCAT ' - ' *CAT +
+                          %SST(&MSGDTA 1 50)) MSGTYPE(*ESCAPE)
+             GOTO       CMDLBL(ERROR)
+
+             /* General error exit */
+ ERROR:      SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('INVDRIVER ended abnormally') +
+                          MSGTYPE(*DIAG)
+             GOTO       CMDLBL(ENDPGM)
+
+             /* Unhandled error catch-all */
+ UNHANDLED:  RCVMSG     MSGTYPE(*EXCP) MSGDTA(&MSGDTA) MSGID(&MSGID)
+
+             SNDPGMMSG  MSGID(CPF9898) MSGF(QCPFMSG) +
+                          MSGDTA('Unhandled error in INVDRIVER: ' +
+                          *CAT &MSGID *TCAT ' - ' *CAT %SST(&MSGDTA +
+                          1 50)) MSGTYPE(*DIAG)
+             GOTO       CMDLBL(ERROR)
+
+             /* Program end */
+ ENDPGM:     ENDPGM

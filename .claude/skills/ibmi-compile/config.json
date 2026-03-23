@@ -1,0 +1,9 @@
+{
+  "ibmi-compile": {
+    "serverUrl": "http://as400:8080",
+    "defaultLibrary": "AGLIB",
+    "defaultObjectType": "PGM",
+    "testLibrary": "EDITEST",
+    "notes": "The compile service automatically uploads inline source to IBM i - no manual IFS sync needed"
+  }
+}

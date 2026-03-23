@@ -1,0 +1,14 @@
+{
+  "ibmi-compile": {
+    "serverUrl": "http://localhost:8080",
+    "defaultLibrary": "DEVLIB",
+    "defaultObjectType": "PGM",
+    "defaultMode": "BNDRPG",
+    "libraryList": ["DEVLIB"],
+    "compileOptions": {
+      "replace": true,
+      "dbgview": "*SOURCE"
+    },
+    "debugMode": false
+  }
+}

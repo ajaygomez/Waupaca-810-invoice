@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(ibmi-compile)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(source:*)",
+      "Bash(echo:*)",
+      "Bash(export:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(awk:*)",
+      "Bash(xxd:*)",
+      "Bash(cd:*)",
+      "Bash(npm install:*)",
+      "Bash(npx ng build:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pandoc:*)",
+      "WebSearch"
+    ]
+  }
+}
