@@ -347,6 +347,8 @@ Dcl-PR getDateTimeChar Char( 15 );
 End-PR;
 Dcl-PR getDateTimeChar14 Char( 14 );
 End-PR;
+Dcl-PR getDateTimeCharMicro Char( 22 );
+End-PR;
 
 Dcl-PR LogError;
   P_ErrorMessage VarChar( 1000 ) Const;
@@ -789,9 +791,9 @@ For customerCurRow = 1 to rowsFetched;
   // Open IFS file using first invoice number
   InvoiceNumber = %Char( driverData( 1 ).invoiceNumber );
   TempFileName = 'RAW_INV_' + %Trim( InvoiceNumber ) +
-                 '_' + getDateTimeChar( ) + '.txt';
+                 '_' + getDateTimeCharMicro( ) + '.txt';
   FileName = 'WF_INV_' + %Trim( InvoiceNumber ) +
-             '_' + getDateTimeChar( ) + '.txt';
+             '_' + getDateTimeCharMicro( ) + '.txt';
   CompleteFilePath = FilePath + TempFileName;
   FHandle = OpenFile( %Trim( CompleteFilePath ): %Trim( Mode ) );
   If FHandle = *Null;
@@ -2582,6 +2584,24 @@ End-PI;
   dateStr = %Char( %Date( ): *ISO0 );
   timeStr = %Char( %Time( ): *ISO0 );
   Return dateStr + timeStr;
+End-Proc;
+
+//-------------------------------------------------------------------
+// getDateTimeCharMicro - Get date/time with microseconds
+//   Returns: YYYYMMDD_HHMMSS_UUUUUU (22 chars)
+//-------------------------------------------------------------------
+Dcl-Proc getDateTimeCharMicro;
+Dcl-PI getDateTimeCharMicro Char( 22 );
+End-PI;
+  Dcl-S tsNow Timestamp;
+  Dcl-S dateStr Char( 8 );
+  Dcl-S timeStr Char( 6 );
+  Dcl-S microStr Char( 6 );
+  tsNow = %Timestamp( *SYS );
+  dateStr = %Char( %Date( tsNow ) : *ISO0 );
+  timeStr = %Char( %Time( tsNow ) : *ISO0 );
+  microStr = %Subst( %Char( tsNow ) : 21 : 6 );
+  Return dateStr + '_' + timeStr + '_' + microStr;
 End-Proc;
 
 //-------------------------------------------------------------------

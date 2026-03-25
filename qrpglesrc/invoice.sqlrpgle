@@ -121,6 +121,7 @@ Dcl-S Pcx_AssocCode VarChar( 6 ) Inz( 'GAVF24' );
 
 // Customer type for INVOIC-specific logic
 Dcl-S CustomerType VarChar( 10 ) Inz( 'STANDARD' );
+Dcl-S TpName VarChar( 50 ) Inz( '' );
 
 // Supplier number from CUSMF (plant-based DUNS)
 Dcl-S SupplierNumber VarChar( 10 ) Inz( '' );
@@ -604,6 +605,9 @@ End-PR;
 Dcl-PR getDateTimeChar14 Char( 14 );
 End-PR;
 
+Dcl-PR getDateTimeCharMicro Char( 22 );
+End-PR;
+
 Dcl-PR WriteLineToFile Ind;
   lineText VarChar( 500 ) Const;
   fileHandler Pointer Value;
@@ -714,13 +718,24 @@ For CustomerCurRow = 1 to CustomerRowsFetched;
   EndIf;
 
   // Determine customer type for INVOIC-specific logic
-  // Cummins customers: 1674, 1650, 1681, 1677, 1680, 1688
-  // ZF: customer 7005
-  // Volvo: customer 9475
+  // Derived from ECSVALV1_XREF trading partner name:
+  //   ZF-xxx  -> 'ZF'     (all ZF ship-to customers)
+  //   VOLVO-x -> 'VOLVO'  (all Volvo ship-to customers)
+  //   Others  -> 'STANDARD' (Cummins, etc.)
+  TpName = '';
+  Exec Sql
+    Select e.PREFERREDDISPLAYNAME Into :TpName
+    From EDITEST.EDITPCUSTXRREF p
+    Join EDITEST.ECSVALV1_XREF e
+      On e.ECSVAL_ID = p.ECSVALKEY
+    Where p.SHIPTOCUST = :CustomerNumber
+      And p.SEND810INVOICE = 'Y'
+    Fetch First 1 Row Only;
+
   Select;
-    When %Dec(CustomerNumber : 6 : 0) = 7005;
+    When %Scan('ZF' : TpName) = 1;
       CustomerType = 'ZF';
-    When %Dec(CustomerNumber : 6 : 0) = 9475;
+    When %Scan('VOLVO' : TpName) = 1;
       CustomerType = 'VOLVO';
     Other;
       CustomerType = 'STANDARD';
@@ -783,9 +798,9 @@ For CustomerCurRow = 1 to CustomerRowsFetched;
   InvoiceNumber = %Char(driverData(1).invoiceNumber);
 
   TempFileName = 'RAW_INV_' + %Trim(InvoiceNumber) +
-    getDateTimeChar14() + '_' + getDateTimeChar() + '.txt';
+    '_' + getDateTimeCharMicro() + '.txt';
   FileName = 'WF_INV_' + %Trim(InvoiceNumber) +
-    getDateTimeChar14() + '_' + getDateTimeChar() + '.txt';
+    '_' + getDateTimeCharMicro() + '.txt';
   CompleteFilePath = FilePath + TempFileName;
   fHandle = OpenFile(%Trim(CompleteFilePath) : %Trim(Mode));
 
@@ -1390,8 +1405,13 @@ BegSr ProcessInvoice;
   EndIf;
 
   // Calculate invoice total
-  InvoiceTotal = BaseTotal + SurchargeTotal + EnergySurTotal +
-                 DunnageTotal;
+  // ZF: exclude dunnage (matches mailbox EDI031 - EDI021 = base+sur+eng)
+  If CustomerType = 'ZF';
+    InvoiceTotal = BaseTotal + SurchargeTotal + EnergySurTotal;
+  Else;
+    InvoiceTotal = BaseTotal + SurchargeTotal + EnergySurTotal +
+                   DunnageTotal;
+  EndIf;
 
   //------------------------------------------------------------
   // UNS - Section separator
@@ -1466,9 +1486,9 @@ BegSr ProcessInvoice;
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
 
-    // MOA+79 - Total line items
+    // MOA+79 - Total line items (same as MOA+77 for ZF per EDI031)
     Message = GenerateMOA('79' :
-      FormatDecimal(BaseTotal : 2) : 'USD');
+      FormatDecimal(InvoiceTotal : 2) : 'USD');
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
 
@@ -1530,7 +1550,8 @@ BegSr ProcessInvoice;
   EndIf;
 
   // ALC+PN - Packing/returnable dunnage
-  If DunnagePNTotal > 0;
+  // ZF: skip dunnage ALC (EDIDUNN has $0 prices; mailbox has none)
+  If DunnagePNTotal > 0 And CustomerType <> 'ZF';
     Message = GenerateALC('C' : 'PN');
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
@@ -1547,7 +1568,8 @@ BegSr ProcessInvoice;
   EndIf;
 
   // ALC+PC - Packing costs/non-returnable dunnage
-  If DunmagePCTotal > 0;
+  // ZF: skip dunnage ALC (EDIDUNN has $0 prices; mailbox has none)
+  If DunmagePCTotal > 0 And CustomerType <> 'ZF';
     Message = GenerateALC('C' : 'PC');
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
@@ -2897,6 +2919,27 @@ Dcl-Proc getDateTimeChar14;
   timeStr = %Char(%Time(): *ISO0 );
 
   Return dateStr + timeStr;
+End-Proc;
+
+//-------------------------------------------------------------------
+// getDateTimeCharMicro - Get date/time with microseconds
+//   Returns: YYYYMMDD_HHMMSS_UUUUUU (22 chars)
+//-------------------------------------------------------------------
+Dcl-Proc getDateTimeCharMicro;
+  Dcl-Pi getDateTimeCharMicro Char( 22 );
+  End-Pi;
+
+  Dcl-S tsNow Timestamp;
+  Dcl-S dateStr Char( 8 );
+  Dcl-S timeStr Char( 6 );
+  Dcl-S microStr Char( 6 );
+
+  tsNow = %Timestamp( *SYS );
+  dateStr = %Char( %Date( tsNow ) : *ISO0 );
+  timeStr = %Char( %Time( tsNow ) : *ISO0 );
+  microStr = %Subst( %Char( tsNow ) : 21 : 6 );
+
+  Return dateStr + '_' + timeStr + '_' + microStr;
 End-Proc;
 
 //-------------------------------------------------------------------
