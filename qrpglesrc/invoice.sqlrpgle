@@ -129,6 +129,9 @@ Dcl-S SupplierNumber VarChar( 10 ) Inz( '' );
 // Part description from PARTFILE/PRTDSC01
 Dcl-S PartDescription VarChar( 40 ) Inz( '' );
 
+// Buyer part number from IVCPARTS cross-reference
+Dcl-S BuyerPartNumber VarChar( 35 ) Inz( '' );
+
 // Amortization per piece from PARTFILE
 Dcl-S AmortPerPiece Packed( 9: 2 ) Inz( 0 );
 
@@ -1008,6 +1011,11 @@ BegSr ProcessInvoice;
       ExSr ClearMessage;
 
     When CustomerType = 'ZF';
+      // DTM+137 - Document/message date
+      Message = GenerateDTM('137' : DateResult.FormattedDate : '102');
+      WriteLineToFile(Message + NEW_LINE : fHandle);
+      ExSr ClearMessage;
+
       // DTM+1 - Processing date
       Message = GenerateDTM('1' : DateResult.FormattedDate : '102');
       WriteLineToFile(Message + NEW_LINE : fHandle);
@@ -1133,6 +1141,11 @@ BegSr ProcessInvoice;
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
 
+    // RFF+VA - VAT registration (empty - not maintained in system)
+    Message = GenerateRFF('VA' : '');
+    WriteLineToFile(Message + NEW_LINE : fHandle);
+    ExSr ClearMessage;
+
     // NAD+ST - Ship To (from EDFASN + CUSTADRS)
     Message = GenerateNAD('ST' :
       EDFASN_DS.ST_Code : EDFASN_DS.ST_CodeQual);
@@ -1240,9 +1253,15 @@ BegSr ProcessInvoice;
       AmortPerPiece = 0;
     EndIf;
 
-    // LIN - Line item
+    // IVCPARTS cross-reference: use customer preferred part if exists
+    BuyerPartNumber = GetBuyerPartNumber(
+      %Trim(invoiceDetailDS.IVP002) :
+      %Trim(invoiceDetailDS.IVP003) :
+      CustomerNumber);
+
+    // LIN - Line item (use cross-referenced part if found)
     Message = GenerateLIN(FormattedLineNum : 'IN' :
-      %Trim(invoiceDetailDS.IVP002));
+      %Trim(BuyerPartNumber));
     WriteLineToFile(Message + NEW_LINE : fHandle);
     ExSr ClearMessage;
 
@@ -1354,6 +1373,11 @@ BegSr ProcessInvoice;
         WriteLineToFile(Message + NEW_LINE : fHandle);
         ExSr ClearMessage;
       EndIf;
+
+      // DTM+1 - Service completion date (per line item)
+      Message = GenerateDTM('1' : DateResult.FormattedDate : '102');
+      WriteLineToFile(Message + NEW_LINE : fHandle);
+      ExSr ClearMessage;
     EndIf;
 
     If CustomerType = 'VOLVO';
@@ -3190,4 +3214,89 @@ Dcl-Proc LoadHDRFromECSVAL_INVOIC Export;
   EndIf;
 
   Return l_Success;
+End-Proc;
+
+//-------------------------------------------------------------------
+// GetBuyerPartNumber - Lookup customer's part number from IVCPARTS
+//-------------------------------------------------------------------
+Dcl-Proc GetBuyerPartNumber;
+Dcl-PI *N VarChar( 35 );
+  P_PartNumber VarChar( 15 ) Const;
+  P_OrderNumber VarChar( 22 ) Const;
+  P_CustomerNumber VarChar( 50 ) Const;
+End-PI;
+  Dcl-S BuyerPart VarChar( 35 );
+  Dcl-S CustNum Packed( 6: 0 );
+
+  BuyerPart = '';
+
+  Monitor;
+    CustNum = %Dec( P_CustomerNumber : 6 : 0 );
+  On-Error;
+    CustNum = 0;
+  EndMon;
+
+  // 1. Try Part/PO lookup (most specific match)
+  If %Trim( P_OrderNumber ) <> '';
+    Exec Sql
+      Select Trim( IVC002 )
+      Into :BuyerPart
+      From IVCPARTS
+      Where IVC001 = :P_PartNumber
+        And IVC010 = :P_OrderNumber
+        And IVC003 = 'Y'
+        And ( IVC011 = :CustNum Or IVC011 = 0 )
+      Fetch First 1 Row Only;
+    If SqlState = '00000' And %Trim( BuyerPart ) <> '';
+      Return BuyerPart;
+    EndIf;
+  EndIf;
+
+  // 2. Try Part/Customer lookup via IVCPAR03
+  Exec Sql
+    Select Trim( IVC002 )
+    Into :BuyerPart
+    From IVCPAR03
+    Where IVC001 = :P_PartNumber
+      And IVC011 = :CustNum
+      And IVC003 = 'Y'
+      And ( IVC010 = :P_OrderNumber Or IVC010 = '' )
+    Fetch First 1 Row Only;
+  If SqlState = '00000' And %Trim( BuyerPart ) <> '';
+    Return BuyerPart;
+  EndIf;
+
+  // 3. Try Part-only lookup (generic mapping)
+  Exec Sql
+    Select Trim( IVC002 )
+    Into :BuyerPart
+    From IVCPARTS
+    Where IVC001 = :P_PartNumber
+      And IVC003 = 'Y'
+      And IVC011 = 0
+      And IVC010 = ''
+    Fetch First 1 Row Only;
+  If SqlState = '00000' And %Trim( BuyerPart ) <> '';
+    Return BuyerPart;
+  EndIf;
+
+  // 4. Check for larger part# (IVC015/IVC016 alternate mapping)
+  Exec Sql
+    Select Trim( IVC015 )
+    Into :BuyerPart
+    From IVCPARTS
+    Where IVC001 = :P_PartNumber
+      And IVC015 <> ''
+      And IVC016 = 'Y'
+      And ( ( IVC011 = :CustNum And IVC010 = :P_OrderNumber )
+         Or ( IVC011 = 0 And IVC010 = '' )
+         Or ( IVC011 = :CustNum And IVC010 = '' )
+         Or ( IVC011 = 0 And IVC010 = :P_OrderNumber ) )
+    Fetch First 1 Row Only;
+  If SqlState = '00000' And %Trim( BuyerPart ) <> '';
+    Return BuyerPart;
+  EndIf;
+
+  // If no mapping found, return the original part number
+  Return P_PartNumber;
 End-Proc;
