@@ -1,0 +1,29 @@
+{
+  "program": {
+    "library": "EDITEST",
+    "name": "INVDRIVER",
+    "params": [
+      "230607",
+      "002794",
+      "2306070",
+      "9"
+    ]
+  },
+  "output": {
+    "type": "ifs",
+    "source": "db",
+    "lookup": {
+      "library": "EDITEST",
+      "table": "EDIINVOIC810",
+      "pathColumn": "FILE_PATH",
+      "keyColumn": "PACKING_SLIP",
+      "keyValue": 230607,
+      "orderBy": "CREATED_DATE DESC"
+    }
+  },
+  "env": {
+    "libl": [
+      "EDITEST"
+    ]
+  }
+}

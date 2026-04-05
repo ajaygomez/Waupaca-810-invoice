@@ -1,0 +1,32 @@
+{
+  "requestId": "3aeec683-aea9-4567-9025-b492e75f7210",
+  "startedAt": "2026-04-02T03:37:02.334Z",
+  "finishedAt": "2026-04-02T03:37:02.597Z",
+  "success": true,
+  "program": {
+    "library": "EDITEST",
+    "name": "INVDRIVER",
+    "type": "CLLE"
+  },
+  "output": {
+    "type": "ifs",
+    "path": "/edidev/OUTBOUND/INVOICE/WF_INV_2306070_20260401_223702_503245.txt",
+    "content": "UNA:+.? '\r\nHDR   01  006133441                          12  9146949200                         20260401223702006133441                          9146949200                         1        260401  2237    1                    X12                 260401  2237  1UNOC3                               1                                         0001                                                        \r\nUNH0001          INVOICD  07AUNGAVA11                                                  \r\nBGM380                                   23060701                           9           \r\nDTM13720260331                           102      \r\nDTM1  20260331                           102      \r\nRFFON 5500295504                                                                                                     \r\nRFFIV 23060701                                                                                                       \r\nNADIV 31467                              92                                                                                                                               \r\nNADBY 5056                               92                                                                                                                               \r\nNADSE PD87809001                         92 WAUPACA FOUNDRY, INC.                                                                                                         \r\nNADSF 31467                              92                                                                                                                               \r\nNADPE PD87809001                         92 WAUPACA FOUNDRY, INC.                                                                                                         \r\nRFFVA                                                                                                                \r\nNADST 5056                               92                                                                                                                               \r\nCUX1  USD4              \r\nLIN000001IN 03506145310601                                                                                                      \r\nIMDF                         ARM, CONTROL                                                                                                                                                                                                                                                          \r\nQTY47 190            EA    \r\nMOA2032901.30                            USD      \r\nMOA38 3824.70                            USD      \r\nPRICON15.27                         \r\nPRIAAA20.13                         \r\nRFFAAU230607                                                                                                         \r\nRFFON 5500295504                                                                                                     \r\nDTM1  20260331                           102      \r\nUNSS\r\nMOA77 3824.70                            USD      \r\nMOA1250.00                               USD      \r\nMOA1760.00                               USD      \r\nMOA79 3824.70                            USD      \r\nALCC  SC          \r\nMOA8  923.40                             USD      \r\nUNT33    0001          \r\nUNZ1     20260401223702\r\n",
+    "metadata": {
+      "size": 3356,
+      "modified": "2026-04-02T03:37:02.000Z"
+    },
+    "lookup": {
+      "source": "db",
+      "config": {
+        "library": "EDITEST",
+        "table": "EDIINVOIC810",
+        "pathColumn": "FILE_PATH",
+        "keyColumn": "PACKING_SLIP",
+        "keyValue": 230607,
+        "orderBy": "CREATED_DATE DESC"
+      },
+      "resolvedPath": "/edidev/OUTBOUND/INVOICE/WF_INV_2306070_20260401_223702_503245.txt"
+    }
+  }
+}

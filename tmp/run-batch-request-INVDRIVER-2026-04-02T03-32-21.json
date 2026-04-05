@@ -1,0 +1,26 @@
+{
+  "program": {
+    "library": "EDITEST",
+    "name": "INVDRIVER",
+    "params": [
+      "223301",
+      "01681",
+      "1600001",
+      "9"
+    ]
+  },
+  "output": {
+    "type": "db2",
+    "tables": [
+      {
+        "library": "EDITEST",
+        "table": "EDIINVOICE810"
+      }
+    ]
+  },
+  "env": {
+    "libl": [
+      "EDITEST"
+    ]
+  }
+}

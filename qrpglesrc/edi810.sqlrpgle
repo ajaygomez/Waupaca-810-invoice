@@ -1591,12 +1591,11 @@ For customerCurRow = 1 to rowsFetched;
                And PROCESSED_FLAG = 'I'
                And X12EDIFACT = 'X12';
   Else;
-    // No invoices written - revert to N for retry
-    Exec Sql Update EDIINVOIC810
-             Set PROCESSED_FLAG = 'N'
-             Where CUSTOMER_NUMBER = :customerNumber
-               And PROCESSED_FLAG = 'I'
-               And X12EDIFACT = 'X12';
+    // No invoices written - leave at 'I' so they don't get
+    // swept up by the next INVDRIVER/INVSCAN call
+    LogError( 'No invoices written for customer ' +
+              %Trim( customerNumber ) +
+              ' - records left at PROCESSED_FLAG=I' );
 
     // Clean up empty files
     CmdString = 'CALL QP2SHELL PARM(''/QOpenSys/usr/bin/sh'' ''-c'' ' +

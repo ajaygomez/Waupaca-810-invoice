@@ -23,19 +23,11 @@
       "Bash(pandoc:*)",
       "WebSearch",
       "Read(//c/Users/gomeza/tmp/**)",
-      "Bash(SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no gomeza@as400 \"cat /edidev/:*)",
       "Skill(update-config)",
       "Bash(chmod:*)",
-      "Bash(DISPLAY=:0 SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/:*)",
-      "Bash(SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_70000_20260323_103733_144677.txt\")",
-      "Bash(DISPLAY=dummy SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_70000_20260323_103733_144677.txt\")",
-      "Bash(DISPLAY=dummy SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_184500_20260323_103733_391250.txt\")",
-      "Bash(DISPLAY=dummy SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_160000_20260323_103736_122980.txt\")",
-      "Bash(SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_70000_20260324_204459_608763.txt\")",
-      "Bash(DISPLAY=none SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_70000_20260324_204459_608763.txt\")",
-      "Bash(DISPLAY=none SSH_ASKPASS=C:/Users/gomeza/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no -o BatchMode=no gomeza@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_184500_20260324_204459_831150.txt\")",
-      "Bash(SSH_ASKPASS=$HOME/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no $IBMI_DB_USER@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_160001_20260324_205431_789236.txt\")",
-      "Bash(DISPLAY=:0 SSH_ASKPASS=$HOME/tmp/ssh_askpass.sh SSH_ASKPASS_REQUIRE=force ssh -o StrictHostKeyChecking=no $IBMI_DB_USER@as400 \"cat /edidev/OUTBOUND/INVOICE/WF_INV_160001_20260324_205431_789236.txt\")"
+      "Bash(SSH_ASKPASS=:*)",
+      "Bash(DISPLAY=:*)",
+      "Bash(bash C:/Users/gomeza/tmp/run-invscan.sh)"
     ]
   }
 }
