@@ -90,6 +90,11 @@ Dcl-S CurrentRow Zoned( 3: 0 );
 Dcl-S CustomerCurRow Zoned( 3: 0 ) Inz( *Zeros );
 Dcl-S CustomerRowsFetched Zoned( 3: 0 ) Inz( *Zeros );
 Dcl-S InvoiceCurRow Zoned( 3: 0 ) Inz( *Zeros );
+
+// ResolveInvoiceNumbers work fields
+Dcl-S WkIdx Zoned( 3: 0 );
+Dcl-S WkPS Packed( 6: 0 );
+Dcl-S WkIVH021 Packed( 8: 0 );
 Dcl-S InvoiceRowsFetched Zoned( 3: 0 ) Inz( *Zeros );
 
 Dcl-S LineItemNumber Zoned( 5: 0 ) Inz( 0 );
@@ -166,7 +171,7 @@ Dcl-DS DateResult LikeDS(Result);
 // Driver data - invoice requests from EDIINVOIC810
 Dcl-DS driverData Qualified Dim(50 );
   packingSlip Packed( 6: 0 );
-  invoiceNumber Packed( 7: 0 );
+  invoiceNumber Packed( 8: 0 );
   pickList Packed( 6: 0 );
 End-DS;
 
@@ -796,6 +801,11 @@ For CustomerCurRow = 1 to CustomerRowsFetched;
     Where CUSTOMER_NUMBER = :CustomerNumber
       And PROCESSED_FLAG = 'N'
       And X12EDIFACT = 'EDI';
+
+  // Derive missing invoice numbers from IVH021 (IVCHDR/IVCHDRH).
+  // A row with INVOICE_NUMBER=0 means the caller passed blank
+  // and wants the real number looked up by packing slip.
+  ExSr ResolveInvoiceNumbers;
 
   // Create output file
   InvoiceNumber = %Char(driverData(1).invoiceNumber);
@@ -1753,6 +1763,54 @@ EndSr;
 
 BegSr ClearMessage;
   Message = *Blanks;
+EndSr;
+
+//==============================================================================
+// ResolveInvoiceNumbers - For any driverData row with invoiceNumber = 0,
+// look up IVH021 from IVCHDR/IVCHDRH by packing slip and back-fill the
+// EDIINVOIC810 tracking table. A zero value means the caller (INVTEST,
+// INVDRIVER, or manual) passed blank and asked us to derive.
+//==============================================================================
+BegSr ResolveInvoiceNumbers;
+  For WkIdx = 1 to InvoiceRowsFetched;
+    If driverData(WkIdx).invoiceNumber <> 0;
+      Iter;
+    EndIf;
+
+    WkPS = driverData(WkIdx).packingSlip;
+    WkIVH021 = 0;
+
+    Exec Sql
+      Select IVH021 Into :WkIVH021
+      From IVCHDR
+      Where IVH001 = :WkPS
+      Fetch First 1 Row Only;
+
+    If SqlState <> '00000';
+      Exec Sql
+        Select IVH021 Into :WkIVH021
+        From IVCHDRH
+        Where IVH001 = :WkPS
+        Fetch First 1 Row Only;
+    EndIf;
+
+    If WkIVH021 = 0;
+      LogError('Cannot derive invoice number - no IVH021 for PS ' +
+               %Char(WkPS));
+      Iter;
+    EndIf;
+
+    driverData(WkIdx).invoiceNumber = WkIVH021;
+
+    Exec Sql
+      Update EDIINVOIC810
+      Set INVOICE_NUMBER = :WkIVH021
+      Where PACKING_SLIP = :WkPS
+        And CUSTOMER_NUMBER = :CustomerNumber
+        And INVOICE_NUMBER = 0
+        And X12EDIFACT = 'EDI'
+        And PROCESSED_FLAG = 'I';
+  EndFor;
 EndSr;
 
 BegSr EndProgram;

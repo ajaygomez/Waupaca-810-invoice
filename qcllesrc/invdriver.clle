@@ -9,7 +9,10 @@
 /* Parameters:                                                        */
 /*   &PSIN   - Packing Slip Number (6,0)                            */
 /*   &CUSTIN - Customer Number (6,0)                                */
-/*   &INVIN  - Invoice Number (7,0)                                  */
+/*   &INVIN  - Invoice Number (8,0) - OPTIONAL                      */
+/*             If blank/zero, INVOICE/EDI810 will derive IVH021     */
+/*             from the packing slip and back-fill EDIINVOIC810.    */
+/*             If non-zero, value is trusted and used as-is.        */
 /*   &INVTY  - Invoice Type: '00'=X12 810, '9 '=EDIFACT INVOIC      */
 /*             IMPORTANT: Only these two values are valid.           */
 /*             Invalid types will cause immediate error exit.        */
@@ -40,7 +43,7 @@
              /* Parameter Declarations - Accept as CHAR to avoid conversion issues */
              DCL        VAR(&PSIN) TYPE(*CHAR) LEN(6)
              DCL        VAR(&CUSTIN) TYPE(*CHAR) LEN(6)
-             DCL        VAR(&INVIN) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&INVIN) TYPE(*CHAR) LEN(8)
              DCL        VAR(&INVTY) TYPE(*CHAR) LEN(2)
 
              /* Working Variables */
@@ -51,7 +54,7 @@
              DCL        VAR(&FMTTYPE) TYPE(*CHAR) LEN(3)
              DCL        VAR(&PS) TYPE(*DEC) LEN(6 0)
              DCL        VAR(&CUST) TYPE(*DEC) LEN(6 0)
-             DCL        VAR(&INV) TYPE(*DEC) LEN(7 0)
+             DCL        VAR(&INV) TYPE(*DEC) LEN(8 0)
 
              /* Error Handling Variables */
              DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
@@ -118,9 +121,10 @@
              ENDDO
 
              /* Validate INVIN contains only numeric characters */
+             /* (blanks allowed - treated as "derive from IVH021") */
              CHGVAR     VAR(&VALID) VALUE('1')
              CHGVAR     VAR(&I) VALUE(1)
-             DOWHILE    COND(&I *LE 7)
+             DOWHILE    COND(&I *LE 8)
                 CHGVAR  VAR(&CHAR) VALUE(%SST(&INVIN &I 1))
                 IF      COND(&CHAR *LT '0' *OR &CHAR *GT '9') THEN(DO)
                    IF   COND(&CHAR *NE ' ') THEN(DO)
@@ -156,19 +160,28 @@
                 GOTO    CMDLBL(ERROR)
              ENDDO
 
-             CHGVAR     VAR(&INV) VALUE(%DEC(&INVIN 7 0))
-             MONMSG     MSGID(CPF0000) EXEC(DO)
-                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
-                          MSGDTA('INV conversion failed - invalid +
-                          format: ' *CAT &INVIN) MSGTYPE(*ESCAPE)
-                GOTO    CMDLBL(ERROR)
+             /* Convert INV: blank means "derive" (set to 0);       */
+             /* any other value is trusted and converted as-is.     */
+             IF         COND(%TRIM(&INVIN) *EQ ' ') THEN(DO)
+                CHGVAR  VAR(&INV) VALUE(0)
+             ENDDO
+             ELSE       CMD(DO)
+                CHGVAR  VAR(&INV) VALUE(%DEC(&INVIN 8 0))
+                MONMSG  MSGID(CPF0000) EXEC(DO)
+                   SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                             MSGDTA('INV conversion failed - +
+                             invalid format: ' *CAT &INVIN) +
+                             MSGTYPE(*ESCAPE)
+                   GOTO   CMDLBL(ERROR)
+                ENDDO
              ENDDO
 
              CHGVAR     VAR(&PSCHAR) VALUE(%TRIM(&PSIN))
              MONMSG     MSGID(CPF0000)
              CHGVAR     VAR(&CUSTCHAR) VALUE(%TRIM(&CUSTIN))
              MONMSG     MSGID(CPF0000)
-             CHGVAR     VAR(&INVCHAR) VALUE(%TRIM(&INVIN))
+             /* &INVCHAR holds the numeric form (0 means "derive")  */
+             CHGVAR     VAR(&INVCHAR) VALUE(&INV)
              MONMSG     MSGID(CPF0000)
 
              /* Validate Invoice Type FIRST - before any database operations */

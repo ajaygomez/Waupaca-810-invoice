@@ -71,6 +71,11 @@ Dcl-S ReadState Char( 5 );
 // Loop counters
 Dcl-S CustomerCurRow Zoned( 3: 0 );
 Dcl-S InvoiceCurRow Zoned( 3: 0 );
+
+// ResolveInvoiceNumbers work fields
+Dcl-S WkIdx Zoned( 3: 0 );
+Dcl-S WkPS Packed( 6: 0 );
+Dcl-S WkIVH021 Packed( 8: 0 );
 Dcl-S InvoiceRowsFetched Zoned( 3: 0 );
 Dcl-S DetailCurRow Zoned( 3: 0 );
 Dcl-S DetailRowsFetched Zoned( 3: 0 );
@@ -584,6 +589,18 @@ Dcl-PR ParsePipeDelimited VarChar( 20 );
   P_Index Int( 10 ) Const;
 End-PR;
 
+// BuildSacFixed builds a fixed-file SAC line at positions matching the
+// existing inline layout. SAC05 is cents (implied-2); SAC07 is rate in
+// implied-2 cents; SAC08 is a 9-char quantity; SAC09 is a 2-char UOM.
+Dcl-PR BuildSacFixed VarChar( 200 );
+  P_Indicator VarChar( 1 ) Const;
+  P_Code      VarChar( 4 ) Const;
+  P_AmtCents  Packed( 13: 0 ) Const;
+  P_RateImpl2 Packed( 13: 0 ) Const Options( *NoPass );
+  P_Qty       Packed( 9: 0 )  Const Options( *NoPass );
+  P_Uom       VarChar( 2 )    Const Options( *NoPass );
+End-PR;
+
 //==============================================================================
 // M A I N L I N E
 //==============================================================================
@@ -787,6 +804,11 @@ For customerCurRow = 1 to rowsFetched;
            Where CUSTOMER_NUMBER = :customerNumber
              And PROCESSED_FLAG = 'N'
              And X12EDIFACT = 'X12';
+
+  // Derive missing invoice numbers from IVH021 (IVCHDR/IVCHDRH).
+  // A row with INVOICE_NUMBER=0 means the caller passed blank
+  // and wants the real number looked up by packing slip.
+  ExSr ResolveInvoiceNumbers;
 
   // Open IFS file using first invoice number
   InvoiceNumber = %Char( driverData( 1 ).invoiceNumber );
@@ -1322,6 +1344,21 @@ For customerCurRow = 1 to rowsFetched;
       WriteLineToFile( Message + NEW_LINE : FHandle );
       SegCountTxn += 1;
 
+      // SAC - Line-level surcharge (combined base + energy per piece)
+      // Emitted only when surcharges are NOT folded into IT1 unit price.
+      If Pcx_AddSurcharge <> 'Y'
+         And ( dtlSurcharge <> 0 Or dtlEngSurch <> 0 );
+        Message = BuildSacFixed(
+                    'C' :
+                    %Trim( Pcx_SacSurchCode ) :
+                    ( dtlQty * ( dtlSurcharge + dtlEngSurch ) ) * 100 :
+                    ( dtlSurcharge + dtlEngSurch ) * 100 :
+                    dtlQty :
+                    Pcx_It1Uom );
+        WriteLineToFile( Message + NEW_LINE : FHandle );
+        SegCountTxn += 1;
+      EndIf;
+
       // PID - Product/Item Description (if configured)
       If Pcx_SendPid = 'Y' And %Trim( dtlDesc ) <> '';
         Message = GeneratePID( 'F' : '' : %Trim( dtlDesc ) );
@@ -1471,27 +1508,6 @@ For customerCurRow = 1 to rowsFetched;
       SegCountTxn += 1;
     EndIf;
 
-    // SAC - Summary surcharge (when surcharges NOT folded into unit price)
-    If Pcx_AddSurcharge <> 'Y' And
-       ( TotalSurcharge + TotalEnergySurcharge ) > 0;
-      sacSegment = *Blanks;
-      sacPos = 1;
-      %Subst( sacSegment : sacPos : 3 ) = 'SAC';
-      sacPos += 3;
-      %Subst( sacSegment : sacPos : 1 ) = 'C';
-      sacPos += 1;
-      %Subst( sacSegment : sacPos : 4 ) = %Trim( Pcx_SacSurchCode );
-      sacPos += 4;
-      sacPos += 2;
-      sacPos += 2;
-      SurchAmtCents = ( TotalSurcharge + TotalEnergySurcharge ) * 100;
-      %Subst( sacSegment : sacPos : 15 ) =
-        %Trim( %Char( SurchAmtCents ) );
-      Message = sacSegment;
-      WriteLineToFile( Message + NEW_LINE : FHandle );
-      SegCountTxn += 1;
-    EndIf;
-
     // SAC/ITA - Dunnage segments from EDIDUNN
     // Summary-level only (line-level dunnage for DTNA handled separately)
     If Pcx_DunnageSegType <> 'NONE' And TotalDunnage > 0
@@ -1523,21 +1539,10 @@ For customerCurRow = 1 to rowsFetched;
                       %Trim( DunDesc ) );
         Else;
           // SAC segment for dunnage (CNH/Bobcat/NACCO style)
-          sacSegment = *Blanks;
-          sacPos = 1;
-          %Subst( sacSegment : sacPos : 3 ) = 'SAC';
-          sacPos += 3;
-          %Subst( sacSegment : sacPos : 1 ) = 'C';
-          sacPos += 1;
-          %Subst( sacSegment : sacPos : 4 ) =
-            %Trim( Pcx_SacDunnCode );
-          sacPos += 4;
-          sacPos += 2;
-          sacPos += 2;
-          DunAmtCents = DunExtPrice * 100;
-          %Subst( sacSegment : sacPos : 15 ) =
-            %Trim( %Char( DunAmtCents ) );
-          Message = sacSegment;
+          Message = BuildSacFixed(
+                      'C' :
+                      %Trim( Pcx_SacDunnCode ) :
+                      DunExtPrice * 100 );
         EndIf;
         WriteLineToFile( Message + NEW_LINE : FHandle );
         SegCountTxn += 1;
@@ -1619,6 +1624,54 @@ ExSr EndProgram;
 
 BegSr ClearMessage;
   Message = *Blanks;
+EndSr;
+
+//==============================================================================
+// ResolveInvoiceNumbers - For any driverData row with invoiceNumber = 0,
+// look up IVH021 from IVCHDR/IVCHDRH by packing slip and back-fill the
+// EDIINVOIC810 tracking table. A zero value means the caller (INV810TST,
+// INVDRIVER, or manual) passed blank and asked us to derive.
+//==============================================================================
+BegSr ResolveInvoiceNumbers;
+  For WkIdx = 1 to invoiceRowsFetched;
+    If driverData( WkIdx ).invoiceNumber <> 0;
+      Iter;
+    EndIf;
+
+    WkPS = driverData( WkIdx ).packingSlip;
+    WkIVH021 = 0;
+
+    Exec Sql
+      Select IVH021 Into :WkIVH021
+      From IVCHDR
+      Where IVH001 = :WkPS
+      Fetch First 1 Row Only;
+
+    If SqlState <> '00000';
+      Exec Sql
+        Select IVH021 Into :WkIVH021
+        From IVCHDRH
+        Where IVH001 = :WkPS
+        Fetch First 1 Row Only;
+    EndIf;
+
+    If WkIVH021 = 0;
+      LogError( 'Cannot derive invoice number - no IVH021 for PS ' +
+                %Char( WkPS ) );
+      Iter;
+    EndIf;
+
+    driverData( WkIdx ).invoiceNumber = WkIVH021;
+
+    Exec Sql
+      Update EDIINVOIC810
+      Set INVOICE_NUMBER = :WkIVH021
+      Where PACKING_SLIP = :WkPS
+        And CUSTOMER_NUMBER = :customerNumber
+        And INVOICE_NUMBER = 0
+        And X12EDIFACT = 'X12'
+        And PROCESSED_FLAG = 'I';
+  EndFor;
 EndSr;
 
 BegSr EndProgram;
@@ -2408,6 +2461,47 @@ End-PI;
     %Subst( segmentData:Pos:18 ) = %Trim( p3 );
   EndIf;
   Return segmentData;
+End-Proc;
+
+//-------------------------------------------------------------------
+// BuildSacFixed - build the fixed-file SAC line used for surcharge
+// and dunnage writes. Keeps the pre-existing byte layout for the
+// SAC01/SAC02/SAC05 slots and extends it with SAC06/SAC07/SAC08/SAC09.
+//-------------------------------------------------------------------
+Dcl-Proc BuildSacFixed Export;
+Dcl-PI *N VarChar( 200 );
+    P_Indicator VarChar( 1 ) Const;
+    P_Code      VarChar( 4 ) Const;
+    P_AmtCents  Packed( 13: 0 ) Const;
+    P_RateImpl2 Packed( 13: 0 ) Const Options( *NoPass );
+    P_Qty       Packed( 9: 0 )  Const Options( *NoPass );
+    P_Uom       VarChar( 2 )    Const Options( *NoPass );
+End-PI;
+  Dcl-S seg Char( 200 ) Inz( *Blanks );
+  Dcl-S p Int( 10 ) Inz( 1 );
+  %Subst( seg : p : 3 ) = 'SAC';
+  p += 3;
+  %Subst( seg : p : 1 ) = %Trim( P_Indicator );
+  p += 1;
+  %Subst( seg : p : 4 ) = %Trim( P_Code );
+  p += 4;
+  p += 2;   // SAC03 slot
+  p += 2;   // SAC04 slot
+  %Subst( seg : p : 15 ) = %Trim( %Char( P_AmtCents ) );
+  p += 15;
+  p += 1;   // SAC06 handling code - left blank
+  If %Parms( ) >= 4;
+    %Subst( seg : p : 6 ) = %Trim( %Char( P_RateImpl2 ) );
+  EndIf;
+  p += 6;
+  If %Parms( ) >= 5;
+    %Subst( seg : p : 9 ) = %Trim( %Char( P_Qty ) );
+  EndIf;
+  p += 9;
+  If %Parms( ) >= 6;
+    %Subst( seg : p : 2 ) = %Trim( P_Uom );
+  EndIf;
+  Return seg;
 End-Proc;
 
 //-------------------------------------------------------------------

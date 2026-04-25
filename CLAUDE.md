@@ -35,18 +35,20 @@ NEVER run UPDATE, INSERT, or DELETE — not via SQL, inline programs, or any mec
 
 ### Test Execution
 Run `/ibmi-compile run batch` using the following parameters:
-- **Program:** `asntest`
+- **Program:** `INV810TST` (or `INVDRIVER` with X12 parm)
 - **Library:** `EDITEST`
-- **Pick list:** `223655`
+- **Packing slip:** `223655`
 - **Customer:** `01564`
-- **X12 parm:** `00`
-- **Invoice:** `0070000`
+- **Invoice number:** `00000000` to derive from `IVH021` (real: `22365501`), or any 8-digit value to override the tracking/filename
+- **X12 parm (for INVDRIVER only):** `00`
 
 ### Verifying Output
 After the program runs, it generates output in the IFS. To find the IFS output file path:
 1. Query using the SQL in `c:/Users/gomeza/Documents/gitrepos/waupaca-856-desadv/database/ediinvoic810.sql`
-2. Filter by the pick list number (`223655`)
-3. Get the latest record for that pick list — it contains the IFS file path
+2. Filter by the packing slip number (`223655`)
+3. Get the latest record for that packing slip — it contains the IFS file path
+
+Note: passing `00000000` for invoice number triggers derive-from-`IVH021` in `INVOICE`/`EDI810`. Passing a specific value stores that value in `EDIINVOIC810` and the IFS filename, but the EDI content (`BIG02` / `BGM02`) always reflects the real `IVH021` regardless. See `decisions/2026-04-20-invoice-number-source-of-truth.md`.
 
 ## EDIFACT INVOIC Testing
 
@@ -61,19 +63,21 @@ After the program runs, it generates output in the IFS. To find the IFS output f
 
 ### Test Execution
 Run `/ibmi-compile run batch` using the following parameters:
-- **Program:** `invdriver`
+- **Program:** `INVTEST` (or `INVDRIVER` with EDIFACT parm)
 - **Library:** `EDITEST`
-- **Pick list:** `223301`
+- **Packing slip:** `223301`
 - **Customer:** `01681`
-- **EDIFACT parm:** `09`
-- **Invoice number:** `01600001`
+- **Invoice number:** `00000000` to derive from `IVH021` (real: `22330101`), or any 8-digit value to override the tracking/filename
+- **EDIFACT parm (for INVDRIVER only):** `9 ` (digit `9` plus one space)
 
 ### Verifying Output
 After the program runs, it generates output in the IFS. To find the IFS output file path:
 1. Query using the SQL in `c:/Users/gomeza/Documents/gitrepos/waupaca-856-desadv/database/ediinvoic810.sql`
-2. Filter by the pick list number (`223301`)
-3. Get the latest record for that pick list — it contains the IFS file path
+2. Filter by the packing slip number (`223301`)
+3. Get the latest record for that packing slip — it contains the IFS file path
 4. Read the IFS file and verify the data is correct
+
+Note: passing `00000000` for invoice number triggers derive-from-`IVH021` in `INVOICE`/`EDI810`. Passing a specific value stores that value in `EDIINVOIC810` and the IFS filename, but the EDI content (`BGM02`) always reflects the real `IVH021` regardless. See `decisions/2026-04-20-invoice-number-source-of-truth.md`.
 
 ## Decision Documentation
 

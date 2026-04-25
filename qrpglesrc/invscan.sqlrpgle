@@ -59,7 +59,7 @@ Dcl-Pr CallInvDriver
   ExtPgm( 'EDITEST/INVDRIVER' );
   P_PackSlip Char( 6 );
   P_CustNum Char( 6 );
-  P_InvNum Char( 7 );
+  P_InvNum Char( 8 );
   P_InvType Char( 2 );
 End-Pr;
 
@@ -102,8 +102,8 @@ Dcl-S DocType Char( 3 );
 Dcl-S PackSlipStr Char( 8 );
 Dcl-S PackSlipPattern Char( 20 );
 
-// Invoice number from IVCHDR/IVCHDRH
-Dcl-S InvoiceNum Packed( 6:0 );
+// Invoice number from IVCHDR/IVCHDRH (IVH021, not IVH027 which is time!)
+Dcl-S InvoiceNum Packed( 8:0 );
 
 // Duplicate check
 Dcl-S DupDone Int( 10 );
@@ -113,7 +113,7 @@ Dcl-S ReprocessCnt Int( 10 ) Inz( 0 );
 // INVDRIVER parameter values
 Dcl-S ParmPackSlip Char( 6 );
 Dcl-S ParmCustNum Char( 6 );
-Dcl-S ParmInvNum Char( 7 );
+Dcl-S ParmInvNum Char( 8 );
 Dcl-S ParmInvType Char( 2 );
 
 // Counters
@@ -204,8 +204,8 @@ Dow '1' = '1';
     Iter;
   EndIf;
 
-  // Look up invoice number
-  ExSr LookupInvoiceNum;
+  // Look up invoice number (IVH021) for skip-if-missing check
+  ExSr LookupIVH021;
 
   If InvoiceNum = 0;
     SkipNoInvCnt += 1;
@@ -387,15 +387,16 @@ BegSr FindInMailbox;
 EndSr;
 
 //------------------------------------------------------------
-// LookupInvoiceNum - Get IVH027 from IVCHDR/IVCHDRH
+// LookupIVH021 - Get IVH021 (invoice number) from
+//   IVCHDR/IVCHDRH. Not IVH027 (that's invoice time HHMMSS).
 //------------------------------------------------------------
-BegSr LookupInvoiceNum;
+BegSr LookupIVH021;
 
   InvoiceNum = 0;
 
   // Try IVCHDR first (active invoices)
   Exec Sql
-    Select IVH027
+    Select IVH021
     Into :InvoiceNum
     From WFLIB.IVCHDR
     Where IVH001 = :PackSlip
@@ -407,7 +408,7 @@ BegSr LookupInvoiceNum;
 
   // Fall back to IVCHDRH (history)
   Exec Sql
-    Select IVH027
+    Select IVH021
     Into :InvoiceNum
     From WFLIB.IVCHDRH
     Where IVH001 = :PackSlip
@@ -494,7 +495,7 @@ BegSr CallDriver;
   // Format customer number (5 digits in 6 chars)
   ParmCustNum = %EditC( CustNum : 'X' );
 
-  // Format invoice number (6 digits in 7 chars)
+  // Format invoice number (IVH021, 8 digits)
   ParmInvNum = %EditC( InvoiceNum : 'X' );
 
   // Set invoice type

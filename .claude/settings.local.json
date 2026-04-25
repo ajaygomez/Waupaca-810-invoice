@@ -27,7 +27,8 @@
       "Bash(chmod:*)",
       "Bash(SSH_ASKPASS=:*)",
       "Bash(DISPLAY=:*)",
-      "Bash(bash C:/Users/gomeza/tmp/run-invscan.sh)"
+      "Bash(bash C:/Users/gomeza/tmp/run-invscan.sh)",
+      "Bash(tee C:/Users/gomeza/tmp/invscan-run.log)"
     ]
   }
 }

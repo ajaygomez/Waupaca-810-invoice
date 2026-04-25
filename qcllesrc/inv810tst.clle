@@ -8,7 +8,8 @@
 /* Parameters:                                                        */
 /*   &PSIN   - Packing Slip Number (6 char)                         */
 /*   &CUSTIN - Customer Number (6 char)                              */
-/*   &INVIN  - Invoice Number (7 char)                               */
+/*   &INVIN  - Invoice Number (8 char) - OPTIONAL                   */
+/*             Blank/zero = EDI810 program derives from IVH021      */
 /*                                                                    */
 /* Called Programs:                                                   */
 /*   EDI810  - X12 810 Invoice generator (no parameters)             */
@@ -31,7 +32,7 @@
              /* Parameter Declarations */
              DCL        VAR(&PSIN) TYPE(*CHAR) LEN(6)
              DCL        VAR(&CUSTIN) TYPE(*CHAR) LEN(6)
-             DCL        VAR(&INVIN) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&INVIN) TYPE(*CHAR) LEN(8)
 
              /* Working Variables */
              DCL        VAR(&SQLSTMT) TYPE(*CHAR) LEN(512)
@@ -40,7 +41,7 @@
              DCL        VAR(&INVCHAR) TYPE(*CHAR) LEN(12)
              DCL        VAR(&PS) TYPE(*DEC) LEN(6 0)
              DCL        VAR(&CUST) TYPE(*DEC) LEN(6 0)
-             DCL        VAR(&INV) TYPE(*DEC) LEN(7 0)
+             DCL        VAR(&INV) TYPE(*DEC) LEN(8 0)
 
              /* Error Handling Variables */
              DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
@@ -115,10 +116,10 @@
                 GOTO    CMDLBL(ERROR)
              ENDDO
 
-             /* Validate INVIN */
+             /* Validate INVIN (blanks allowed = "derive from IVH021") */
              CHGVAR     VAR(&VALID) VALUE('1')
              CHGVAR     VAR(&I) VALUE(1)
-             DOWHILE    COND(&I *LE 7)
+             DOWHILE    COND(&I *LE 8)
                 CHGVAR  VAR(&CHAR) VALUE(%SST(&INVIN &I 1))
                 IF      COND(&CHAR *LT '0' *OR &CHAR *GT '9') THEN(DO)
                    IF   COND(&CHAR *NE ' ') THEN(DO)
@@ -153,19 +154,25 @@
                 GOTO    CMDLBL(ERROR)
              ENDDO
 
-             CHGVAR     VAR(&INV) VALUE(%DEC(&INVIN 7 0))
-             MONMSG     MSGID(CPF0000) EXEC(DO)
-                SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
-                          MSGDTA('INV conversion failed: ' *CAT +
-                          &INVIN) MSGTYPE(*ESCAPE)
-                GOTO    CMDLBL(ERROR)
+             /* Convert INV: blank = 0 (derive); non-blank = as-is */
+             IF         COND(%TRIM(&INVIN) *EQ ' ') THEN(DO)
+                CHGVAR  VAR(&INV) VALUE(0)
+             ENDDO
+             ELSE       CMD(DO)
+                CHGVAR  VAR(&INV) VALUE(%DEC(&INVIN 8 0))
+                MONMSG  MSGID(CPF0000) EXEC(DO)
+                   SNDPGMMSG MSGID(CPF9898) MSGF(QCPFMSG) +
+                             MSGDTA('INV conversion failed: ' *CAT +
+                             &INVIN) MSGTYPE(*ESCAPE)
+                   GOTO   CMDLBL(ERROR)
+                ENDDO
              ENDDO
 
              CHGVAR     VAR(&PSCHAR) VALUE(%TRIM(&PSIN))
              MONMSG     MSGID(CPF0000)
              CHGVAR     VAR(&CUSTCHAR) VALUE(%TRIM(&CUSTIN))
              MONMSG     MSGID(CPF0000)
-             CHGVAR     VAR(&INVCHAR) VALUE(%TRIM(&INVIN))
+             CHGVAR     VAR(&INVCHAR) VALUE(&INV)
              MONMSG     MSGID(CPF0000)
 
              /* Insert tracking record */
@@ -182,7 +189,7 @@
                           CMDLBL(SQLERR))
 
              /* Call EDI810 program */
-             CALL       PGM(EDI810)
+             CALL       PGM(EDITEST/EDI810)
              MONMSG     MSGID(CPF0000) EXEC(GOTO CMDLBL(CALLERR))
 
              /* Normal completion */
