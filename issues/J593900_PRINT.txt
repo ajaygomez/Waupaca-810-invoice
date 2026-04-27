@@ -1,0 +1,20 @@
+TrustedLink                             Listing of Records Sent During Session in CHAR Format                             Page     1
+ 6.04.01    EDI32DTAT                                                                                   CENTRAL 04/23/2026  10:15:37
+ Session# . . . :  1070022131   Started . . . :  04/17/2026 15:45:01    Ended . . . :  04/17/2026 15:45:02   Codes . . . :  A1 00 00
+ Network  . . . :  S1 - S1 STERLING Scripted FTP            Based on network  . . . :  SF - Scripted FTP
+                 1         2         3         4         5         6         7         8         9        10        11        12
+  LINE# 1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5....0....5....0....5....0....5....0....5....0
+  00001 UNA:+.? 'UNB+UNOC:3+006133441:01+0013000046ZF-AG-LFT1+260417:1545+3311'UNH+0001+INVOIC:D:07A:UN:GAVA11'BGM+380+15224401+
+   ...  9'DTM+137:20
+  00002 260416:102'DTM+1:20260416:102'RFF+IV:15224401'RFF+ON:152244'NAD+BY+3017::92+ZF INDUSTRIES LLC'NAD+IV+3017::92+ZF INDUSTR
+   ...  IES LLC:1120
+  00003  W  NORTHBRANCH DR'NAD+SF+25800::92+WAUPACA FOUNDRY, INC.'NAD+SE+25800::92+WAUPACA FOUNDRY, INC.'NAD+PE+3017::92+ZF INDU
+   ...  STRIES LLC'N
+  00004 AD+ST+3017::92+SKYWAY PRECISION INC.:13100 HAGGERTY RD:SUITE B2-170, DOCK C - DOCKS 2,3,4'RFF+VA:1111'RFF+PE:3017'CUX+1:
+   ...  USD'LIN+001+
+  00005 +4660401056:IN'IMD+++:::HOUSING, GEAR'QTY+47:252:EA'DTM+1:20260416:102'MOA+203:25018.56:USD'PRI+AAA:99.28'PRI+CON:58.81'
+   ...  RFF+AAU:1522
+  00006 44'RFF+ON:5500299833'TAX+7+VAT+++:::0.0'UNS+S'MOA+77:25018.56:USD'MOA+125:0.00:USD'MOA+176:0.00:USD'MOA+79:25018.56:USD'
+   ...  ALC+C++++SC'
+  00007 MOA+8:10198.44'UNT+33+0001'UNZ+1+3311'
+                                         * * * * *   E N D   O F   R E P O R T   * * * * *

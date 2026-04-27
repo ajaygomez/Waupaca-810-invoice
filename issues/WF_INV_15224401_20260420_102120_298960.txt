@@ -1,0 +1,235 @@
+UNA:+.? '
+HDR   01  006133441                              0013000046ZF-AG-LFT1               20260420102120006133441                          0013000046ZF-AG-LFT1               1        260420  1021    1                    EDIFAC              260420  1021  1UNOC3                               1                                         0001                                                        
+UNH0001          INVOICD  07AUNGAVA11                                                  
+BGM380                                   15224401                           9           
+DTM13720260416                           102      
+DTM1  20260416                           102      
+RFFON 5500299833                                                                                                     
+RFFIV 15224401                                                                                                       
+NADIV 25800                              92 WAUPACA FOUNDRY, INC.                                                                                                         
+NADBY 3017                               92                                                                                                                               
+NADSE 25800                              92 WAUPACA FOUNDRY, INC.                                                                                                         
+NADSF 25800                              92 WAUPACA FOUNDRY, INC.                                                                                                         
+NADPE 25800                              92 WAUPACA FOUNDRY, INC.                                                                                                         
+RFFVA                                                                                                                
+NADST 3017                               92                                                                                                                               
+CUX1  USD4              
+LIN000001IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000002IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000003IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000004IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000005IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000006IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000007IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000008IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000009IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000010IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000011IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000012IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000013IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000014IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000015IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000016IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000017IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000018IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000019IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000020IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+LIN000021IN 4660401056                                                                                                          
+IMDF                         HOUSING, GEAR                                                                                                                                                                                                                                                         
+QTY47 12             EA    
+MOA203705.72                             USD      
+MOA38 1191.36                            USD      
+PRICON58.81                         
+PRIAAA99.28                         
+RFFAAU152244                                                                                                         
+RFFON 5500299833                                                                                                     
+DTM1  20260416                           102      
+UNSS
+MOA77 25018.56                           USD      
+MOA1250.00                               USD      
+MOA1760.00                               USD      
+MOA79 25018.56                           USD      
+ALCC  SC          
+MOA8  10198.44                           USD      
+UNT233   0001          
+UNZ1     20260420102120
